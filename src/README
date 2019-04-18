@@ -1,0 +1,7 @@
+mucg83
+
+This program is based on the map program mucg73, changes made to that program are listed in the file CHANGES.
+
+Compile the program, for example with command 'f77 mucg83.f -o mucg83'. Check the program output against the file example.txt.
+
+Any constructive comments greatfully received by Mathew (mjp54@cam.ac.uk or mathew@mathewpeet.org).

@@ -1,0 +1,16 @@
+CHANGES
+
+May 03 2006
+MJP - Renamed as mucg83.f, changed range to start from 200 degrees Celcius (ouput is otherwise often not a number (NaN).
+
+April 26 2006
+MJP - ANALY subroutine replaced with MAT_MS and MAT_BS subroutine, instead of performing regression these compare the energy at each temperature to find when it first meets thermodynamic condition for transformation. After this linear interpolation if performed depending on the free energy above and below. This allows BS and MS to be calculated which no longer depends upon temperature range and step size.
+
+MJP - Arrays have all been increased to (1000) to allow calculation with 1 degC step size. 
+
+MJP - The subroutine to calculate free energy of pure iron ENERGY2 by S Babu has been replaced with ENERGY_REVERT, this is the ENERGY subroutine from mucg46 which was originally used to calculate parameters used in the program and HKDHB suggests this may be more self consistant - ideally these parameters should be recalculated.
+
+March 2006
+MJP - Source file edited to allow extrapolation to values more than 5.5 wt percent.
+
+For example to make predictions of kinetics of Aermet or Hadfield Alloy.

@@ -1,0 +1,7 @@
+Check prediction of WS temperature, this still depends upon temperature step used in the program.
+
+Find source of predicting NaN at low temperatures (extend range of program).
+
+Future version:
+Find a better equation for free energies and recalulate the parameters for GN and TTT curves.
+
