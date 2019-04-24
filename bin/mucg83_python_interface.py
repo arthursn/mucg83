@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
         ax.set_xscale('log')
         ax.set_xlim(1e-2, 1e6)
-        # ax.set_ylim(100, 900)
+        ax.set_ylim(100, 900)
         ax.set_xlabel('Time (s)')
         ax.set_ylabel(u'Temperature (°C)')
 
