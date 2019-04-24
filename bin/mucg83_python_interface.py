@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+import platform
 from io import StringIO
 from subprocess import Popen, PIPE
 import argparse
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def parse_temperature(key, line):
@@ -79,7 +80,8 @@ if __name__ == '__main__':
     parser.add_argument('-Cu', '--Cu', type=float, default=0., help='Copper wt.%')
     parser.add_argument('-Al', '--Al', type=float, default=0., help='Aluminium wt.%')
     parser.add_argument('-W', '--W', type=float, default=0., help='Tungsten wt.%')
-    parser.add_argument('--cmd', default='mucg83.exe', help='Path to mucg83 executable')
+    parser.add_argument('--cmd', default='mucg83.exe' if platform.system() == 'Windows' else './mucg83',
+                        help='Path to mucg83 executable')
 
     try:
         args = parser.parse_args()
