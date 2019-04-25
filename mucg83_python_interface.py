@@ -80,7 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('-Cu', '--Cu', type=float, default=0., help='Copper wt.%')
     parser.add_argument('-Al', '--Al', type=float, default=0., help='Aluminium wt.%')
     parser.add_argument('-W', '--W', type=float, default=0., help='Tungsten wt.%')
-    parser.add_argument('--cmd', default='mucg83.exe' if platform.system() == 'Windows' else './mucg83',
+    parser.add_argument('--cmd', default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
                         help='Path to mucg83 executable')
 
     try:
