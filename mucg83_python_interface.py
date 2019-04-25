@@ -99,6 +99,64 @@ def parse_stdout(stdout):
     return df, Ws, Bs_g, Bs_n, Ms
 
 
+def get_transformation_temperature_CCT(TTT_curve_inv, T0, cooling_rate, dT=1.0, maxit=100):
+    """
+    Uses Scheil's method to get the transformation temperature during 
+    continuous cooling from a TTT curve
+    """
+    curr_T = None
+
+    if cooling_rate > 0:
+        dt = dT/cooling_rate
+        curr_T = T0 - dT/2.
+        nucleation_time = 0.
+
+        it = 0
+        while nucleation_time < 1:
+            increment = 0.
+            try:
+                increment = dt/TTT_curve_inv(curr_T)
+            except:
+                pass
+
+            nucleation_time += increment
+            curr_T = curr_T - dT
+
+            it += 1
+
+            if it > maxit:
+                print('Maximum number of iterations ({:}) reached for phi = {:e} K/s'.format(maxit, cooling_rate))
+                curr_T = None
+                break
+    else:
+        print('cooling_rate has to be strictly larger than 0')
+
+    return curr_T
+
+
+def convert_TTT_to_CCT(t, T, T0, cooling_rates, dT=1.0):
+    from scipy.interpolate import interp1d
+
+    # Ascending cooling rates
+    cooling_rates = np.sort(cooling_rates)
+    # Inverse interpolation function of the transformation C curve 
+    # (temperature is mapped into time)
+    TTT_curve_inv = interp1d(T, t)
+
+    tlist = []
+    Tlist = []
+
+    for cooling_rate in cooling_rates:
+        T = get_transformation_temperature_CCT(TTT_curve_inv, T0, cooling_rate, maxit=1000)
+        if T:
+            tlist.append((T0 - T)/cooling_rate)
+            Tlist.append(T)
+        else:
+            break
+
+    return np.array(tlist), np.array(Tlist)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Python interface of MUCG83 for calculating TTT diagrams')
     parser.add_argument('-C', '--C', type=float, default=0., help='Carbon wt.%')
@@ -114,22 +172,49 @@ if __name__ == '__main__':
     parser.add_argument('-W', '--W', type=float, default=0., help='Tungsten wt.%')
     parser.add_argument('--cmd', default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
                         help='Path to mucg83 executable')
+    parser.add_argument('-p', '--plot', default='TTT')
+    parser.add_argument('-T0', '--T0', type=float, default=900.)
 
     args = parser.parse_args()
 
-    cmd = args.cmd
-    composition = vars(args)
-    composition.pop('cmd')
+    args = vars(args)
+    cmd = args.pop('cmd')
+    plot = args.pop('plot').lower()
+    T0 = args.pop('T0')
+
+    composition = args
 
     stdout, stderr = run_mucg83(cmd, **composition)
     # Parse stdout into pandas DataFrame df and critical temperatures Ws, Bs_g, Bs_n, and Ms
     df, Ws, Bs_g, Bs_n, Ms = parse_stdout(stdout.decode())
 
-    # Plot TTT
+    df_no_nan = df.dropna()
+    
     fig, ax = plt.subplots()
 
-    ax.plot(df['DIFFT'], df['CTEMP'], 'k-', label='Ferrite + Pearlite')
-    ax.plot(df['SHEART'], df['SHEAR_CTEMP'], 'r-', label='Bainite')
+    lsty_diff = 'k-'
+    lsty_shear = 'r-'
+
+    # Plot TTT
+    if plot == 'ttt' or plot == 'both':
+        ax.plot(df['DIFFT'], df['CTEMP'], lsty_diff, label='Ferrite + Pearlite (TTT)')
+        ax.plot(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], lsty_shear, label='Bainite (TTT)')
+        lsty_diff = 'k--'
+        lsty_shear = 'r--'
+
+    # Plot CCT
+    if plot == 'cct' or plot == 'both':
+        cooling_rates = 10**np.linspace(-2, 4, 200)
+        t, T = convert_TTT_to_CCT(df['DIFFT'], df['CTEMP'], T0, cooling_rates)
+        ax.plot(t[T > Ms], T[T > Ms], lsty_diff, label='Ferrite + Pearlite (CCT)')
+        t, T = convert_TTT_to_CCT(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], T0, cooling_rates)
+        ax.plot(t[T > Ms], T[T > Ms], lsty_shear, label='Bainite (CCT)')
+
+        for cooling_rate in cooling_rates[::10]:
+            T = np.linspace(T0, 25, 100)
+            t = (T0 - T)/cooling_rate
+            ax.plot(t, T, 'k:', lw=1)
+
 
     ax.set_xscale('log')
     ax.set_xlim(1e-2, 1e6)
@@ -143,11 +228,11 @@ if __name__ == '__main__':
 
     if Bs_n:
         print('Bainite start temperature:', Bs_n, 'oC')
-        ax.axhline(Bs_n, color='r', ls='--')
+        ax.axhline(Bs_n, color='r', ls=':')
         ax.text(ax.get_xlim()[0]*1.5, Bs_n + 10, 'Bainite start', color='r')
     if Ms:
         print('Martensite start temperature:', Ms, 'oC')
-        ax.axhline(Ms, color='b', ls='--')
+        ax.axhline(Ms, color='b', ls=':')
         ax.text(ax.get_xlim()[0]*1.5, Ms + 10, 'Martensite start', color='b')
 
     ax.legend()
