@@ -2,12 +2,44 @@
 
 from __future__ import print_function
 import platform
-from io import StringIO
-from subprocess import Popen, PIPE
 import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from io import StringIO
+from subprocess import Popen, PIPE
+
+
+def run_mucg83(cmd, **composition):
+    proc = Popen(cmd,
+                 stdin=PIPE,
+                 stdout=PIPE,
+                 stderr=PIPE)
+
+    options = ('1\n'
+               '{C}\n'     # Carbon wt.% ?
+               '{Si}\n'    # Silicon wt.% ?
+               '{Mn}\n'    # Manganese wt.% ?
+               '{Ni}\n'    # Nickel wt.% ?
+               '{Mo}\n'    # Molybdenum wt.% ?
+               '{Cr}\n'    # Chromium wt.% ?
+               '{V}\n'     # Vanadium wt.% ?
+               '{Co}\n'    # Cobalt wt.% ?
+               '{Cu}\n'    # Copper wt.% ?
+               '{Al}\n'    # Aluminium wt.% ?
+               '{W}\n'     # Tungsten wt.% ?
+               '0').format(**composition)
+
+    # Passes compositions to mucg83 and reads output
+    # Important information is stored in stdout
+    stdout, stderr = proc.communicate(options.encode())
+
+    try:
+        proc.kill()
+    except:
+        pass
+
+    return stdout, stderr
 
 
 def parse_temperature(key, line):
@@ -83,71 +115,41 @@ if __name__ == '__main__':
     parser.add_argument('--cmd', default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
                         help='Path to mucg83 executable')
 
-    try:
-        args = parser.parse_args()
+    args = parser.parse_args()
 
-        # Calls mucg83
-        proc = Popen(args.cmd,
-                     stdin=PIPE,
-                     stdout=PIPE,
-                     stderr=PIPE)
+    cmd = args.cmd
+    composition = vars(args)
+    composition.pop('cmd')
 
-        composition = vars(args)
-        composition.pop('cmd')
-        options = ('1\n'
-                   '{C}\n'     # Carbon wt.% ?
-                   '{Si}\n'    # Silicon wt.% ?
-                   '{Mn}\n'    # Manganese wt.% ?
-                   '{Ni}\n'    # Nickel wt.% ?
-                   '{Mo}\n'    # Molybdenum wt.% ?
-                   '{Cr}\n'    # Chromium wt.% ?
-                   '{V}\n'     # Vanadium wt.% ?
-                   '{Co}\n'    # Cobalt wt.% ?
-                   '{Cu}\n'    # Copper wt.% ?
-                   '{Al}\n'    # Aluminium wt.% ?
-                   '{W}\n'     # Tungsten wt.% ?
-                   '0').format(**composition)
+    stdout, stderr = run_mucg83(cmd, **composition)
+    # Parse stdout into pandas DataFrame df and critical temperatures Ws, Bs_g, Bs_n, and Ms
+    df, Ws, Bs_g, Bs_n, Ms = parse_stdout(stdout.decode())
 
-        # Passes compositions to mucg83 and reads output
-        # Important information is stored in stdout
-        stdout, stderr = proc.communicate(options.encode())
+    # Plot TTT
+    fig, ax = plt.subplots()
 
-        try:
-            proc.kill()
-        except:
-            pass
+    ax.plot(df['DIFFT'], df['CTEMP'], 'k-', label='Ferrite + Pearlite')
+    ax.plot(df['SHEART'], df['SHEAR_CTEMP'], 'r-', label='Bainite')
 
-        # Parse stdout into pandas DataFrame df and critical temperatures
-        # Ws, Bs_g, Bs_n, and Ms
-        df, Ws, Bs_g, Bs_n, Ms = parse_stdout(stdout.decode())
+    ax.set_xscale('log')
+    ax.set_xlim(1e-2, 1e6)
+    ax.set_ylim(100, 900)
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel(u'Temperature (°C)')
 
-        # Plot TTT
-        fig, ax = plt.subplots()
+    title = ['{}{}'.format(v, k) for k, v in composition.items() if v > 0]
+    title.insert(0, 'Fe')
+    ax.set_title('-'.join(title))
 
-        ax.plot(df['DIFFT'], df['CTEMP'], 'k-', label='Ferrite + Pearlite')
-        ax.plot(df['SHEART'], df['SHEAR_CTEMP'], 'r-', label='Bainite')
+    if Bs_n:
+        print('Bainite start temperature:', Bs_n, 'oC')
+        ax.axhline(Bs_n, color='r', ls='--')
+        ax.text(ax.get_xlim()[0]*1.5, Bs_n + 10, 'Bainite start', color='r')
+    if Ms:
+        print('Martensite start temperature:', Ms, 'oC')
+        ax.axhline(Ms, color='b', ls='--')
+        ax.text(ax.get_xlim()[0]*1.5, Ms + 10, 'Martensite start', color='b')
 
-        ax.set_xscale('log')
-        ax.set_xlim(1e-2, 1e6)
-        ax.set_ylim(100, 900)
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel(u'Temperature (°C)')
+    ax.legend()
 
-        title = ['{}{}'.format(v, k) for k, v in composition.items() if v > 0]
-        title.insert(0, 'Fe')
-        ax.set_title('-'.join(title))
-
-        if Bs_n:
-            print('Bainite start temperature:', Bs_n, 'oC')
-            ax.axhline(Bs_n, color='r', ls='--')
-            ax.text(ax.get_xlim()[0]*1.5, Bs_n + 10, 'Bainite start', color='r')
-        if Ms:
-            print('Martensite start temperature:', Ms, 'oC')
-            ax.axhline(Ms, color='b', ls='--')
-            ax.text(ax.get_xlim()[0]*1.5, Ms + 10, 'Martensite start', color='b')
-
-        ax.legend()
-
-        plt.show()
-    except:
-        pass
+    plt.show()
