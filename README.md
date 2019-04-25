@@ -13,7 +13,7 @@ usage: mucg83_python_interface.py [-h] [-C C] [-Si SI] [-Mn MN] [-Ni NI]
 Try running the following command:
 
 ```bash
-python mucg83_python_interface.py	-C 0.1 -Mn 1
+python mucg83_python_interface.py -C 0.1 -Mn 1
 ```
 
 This will prompt a matplotlib window with the following TTT diagram:
