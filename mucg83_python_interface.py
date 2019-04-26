@@ -99,7 +99,7 @@ def parse_stdout(stdout):
     return df, Ws, Bs_g, Bs_n, Ms
 
 
-def get_transformation_temperature_CCT(TTT_curve_inv, T0, cooling_rate, dT=1.0, maxit=100):
+def get_transformation_temperature_CCT(TTT_curve_inv, Tini, cooling_rate, dT=1.0, maxit=1000):
     """
     Uses Scheil's method to get the transformation temperature during 
     continuous cooling from a TTT curve
@@ -108,7 +108,7 @@ def get_transformation_temperature_CCT(TTT_curve_inv, T0, cooling_rate, dT=1.0, 
 
     if cooling_rate > 0:
         dt = dT/cooling_rate
-        curr_T = T0 - dT/2.
+        curr_T = Tini - dT/2.
         nucleation_time = 0.
 
         it = 0
@@ -134,12 +134,12 @@ def get_transformation_temperature_CCT(TTT_curve_inv, T0, cooling_rate, dT=1.0, 
     return curr_T
 
 
-def convert_TTT_to_CCT(t, T, T0, cooling_rates, dT=1.0):
+def convert_TTT_to_CCT(t, T, Tini, cooling_rates, dT=1.0):
     from scipy.interpolate import interp1d
 
     # Ascending cooling rates
     cooling_rates = np.sort(cooling_rates)
-    # Inverse interpolation function of the transformation C curve 
+    # Inverse interpolation function of the transformation C curve
     # (temperature is mapped into time)
     TTT_curve_inv = interp1d(T, t)
 
@@ -147,9 +147,9 @@ def convert_TTT_to_CCT(t, T, T0, cooling_rates, dT=1.0):
     Tlist = []
 
     for cooling_rate in cooling_rates:
-        T = get_transformation_temperature_CCT(TTT_curve_inv, T0, cooling_rate, maxit=1000)
+        T = get_transformation_temperature_CCT(TTT_curve_inv, Tini, cooling_rate)
         if T:
-            tlist.append((T0 - T)/cooling_rate)
+            tlist.append((Tini - T)/cooling_rate)
             Tlist.append(T)
         else:
             break
@@ -158,29 +158,29 @@ def convert_TTT_to_CCT(t, T, T0, cooling_rates, dT=1.0):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Python interface of MUCG83 for calculating TTT diagrams')
-    parser.add_argument('-C', '--C', type=float, default=0., help='Carbon wt.%')
-    parser.add_argument('-Si', '--Si', type=float, default=0., help='Silicon wt.%')
-    parser.add_argument('-Mn', '--Mn', type=float, default=0., help='Manganese wt.%')
-    parser.add_argument('-Ni', '--Ni', type=float, default=0., help='Nickel wt.%')
-    parser.add_argument('-Mo', '--Mo', type=float, default=0., help='Molybdenum wt.%')
-    parser.add_argument('-Cr', '--Cr', type=float, default=0., help='Chromium wt.%')
-    parser.add_argument('-V', '--V', type=float, default=0., help='Vanadium wt.%')
-    parser.add_argument('-Co', '--Co', type=float, default=0., help='Cobalt wt.%')
-    parser.add_argument('-Cu', '--Cu', type=float, default=0., help='Copper wt.%')
-    parser.add_argument('-Al', '--Al', type=float, default=0., help='Aluminium wt.%')
-    parser.add_argument('-W', '--W', type=float, default=0., help='Tungsten wt.%')
-    parser.add_argument('--cmd', default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
+    parser = argparse.ArgumentParser(description='Python interface of MUCG83 for calculating TTT and CCT diagrams')
+    parser.add_argument('-C', '--C', type=float, default=0., help='Carbon wt.%%')
+    parser.add_argument('-Si', '--Si', type=float, default=0., help='Silicon wt.%%')
+    parser.add_argument('-Mn', '--Mn', type=float, default=0., help='Manganese wt.%%')
+    parser.add_argument('-Ni', '--Ni', type=float, default=0., help='Nickel wt.%%')
+    parser.add_argument('-Mo', '--Mo', type=float, default=0., help='Molybdenum wt.%%')
+    parser.add_argument('-Cr', '--Cr', type=float, default=0., help='Chromium wt.%%')
+    parser.add_argument('-V', '--V', type=float, default=0., help='Vanadium wt.%%')
+    parser.add_argument('-Co', '--Co', type=float, default=0., help='Cobalt wt.%%')
+    parser.add_argument('-Cu', '--Cu', type=float, default=0., help='Copper wt.%%')
+    parser.add_argument('-Al', '--Al', type=float, default=0., help='Aluminium wt.%%')
+    parser.add_argument('-W', '--W', type=float, default=0., help='Tungsten wt.%%')
+    parser.add_argument('-Tini', '--Tini', type=float, default=900., help='Initial continuous cooling temperature')
+    parser.add_argument('-plot', '--plot', default='TTT', help='What to plot: CCT | TTT | both')
+    parser.add_argument('-cmd', '--cmd', default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
                         help='Path to mucg83 executable')
-    parser.add_argument('-p', '--plot', default='TTT')
-    parser.add_argument('-T0', '--T0', type=float, default=900.)
 
     args = parser.parse_args()
 
     args = vars(args)
     cmd = args.pop('cmd')
     plot = args.pop('plot').lower()
-    T0 = args.pop('T0')
+    Tini = args.pop('Tini')
 
     composition = args
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     df, Ws, Bs_g, Bs_n, Ms = parse_stdout(stdout.decode())
 
     df_no_nan = df.dropna()
-    
+
     fig, ax = plt.subplots()
 
     lsty_diff = 'k-'
@@ -204,21 +204,21 @@ if __name__ == '__main__':
 
     # Plot CCT
     if plot == 'cct' or plot == 'both':
-        cooling_rates = 10**np.linspace(-2, 4, 200)
-        t, T = convert_TTT_to_CCT(df['DIFFT'], df['CTEMP'], T0, cooling_rates)
+        cooling_rates = 10**np.linspace(-2, 4, 240)
+
+        t, T = convert_TTT_to_CCT(df['DIFFT'], df['CTEMP'], Tini, cooling_rates)
         ax.plot(t[T > Ms], T[T > Ms], lsty_diff, label='Ferrite + Pearlite (CCT)')
-        t, T = convert_TTT_to_CCT(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], T0, cooling_rates)
+        t, T = convert_TTT_to_CCT(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], Tini, cooling_rates)
         ax.plot(t[T > Ms], T[T > Ms], lsty_shear, label='Bainite (CCT)')
 
         for cooling_rate in cooling_rates[::10]:
-            T = np.linspace(T0, 25, 100)
-            t = (T0 - T)/cooling_rate
+            T = np.linspace(Tini, 25, 100)
+            t = (Tini - T)/cooling_rate
             ax.plot(t, T, 'k:', lw=1)
-
 
     ax.set_xscale('log')
     ax.set_xlim(1e-2, 1e6)
-    ax.set_ylim(100, 900)
+    ax.set_ylim(100, Tini)
     ax.set_xlabel('Time (s)')
     ax.set_ylabel(u'Temperature (°C)')
 

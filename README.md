@@ -17,11 +17,33 @@ pip install numpy matplotlib pandas argparse scipy
 
 # Usage
 
-```bash
+```
 usage: mucg83_python_interface.py [-h] [-C C] [-Si SI] [-Mn MN] [-Ni NI]
                                   [-Mo MO] [-Cr CR] [-V V] [-Co CO] [-Cu CU]
-                                  [-Al AL] [-W W] [--cmd CMD] [-p PLOT]
-                                  [-T0 T0]
+                                  [-Al AL] [-W W] [-Tini TINI] [-plot PLOT]
+                                  [-cmd CMD]
+
+Python interface of MUCG83 for calculating TTT and CCT diagrams
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -C C, --C C           Carbon wt.%
+  -Si SI, --Si SI       Silicon wt.%
+  -Mn MN, --Mn MN       Manganese wt.%
+  -Ni NI, --Ni NI       Nickel wt.%
+  -Mo MO, --Mo MO       Molybdenum wt.%
+  -Cr CR, --Cr CR       Chromium wt.%
+  -V V, --V V           Vanadium wt.%
+  -Co CO, --Co CO       Cobalt wt.%
+  -Cu CU, --Cu CU       Copper wt.%
+  -Al AL, --Al AL       Aluminium wt.%
+  -W W, --W W           Tungsten wt.%
+  -Tini TINI, --Tini TINI
+                        Initial continuous cooling temperature
+  -plot PLOT, --plot PLOT
+                        What to plot: CCT | TTT | both
+  -cmd CMD, --cmd CMD   Path to mucg83 executable
+
 ```
 
 # Examples
@@ -39,7 +61,7 @@ This will prompt a matplotlib window with the following TTT diagram:
 Plot CCT diagram:
 
 ```bash
-python mucg83_python_interface.py -C 0.1 -Mn 1 --plot CCT
+python mucg83_python_interface.py -C 0.1 -Mn 1 --plot CCT --Tini 
 ```
 
 ![Fe-0.1%C-1%Mn TTT](img/Fe-01C-1Mn_CCT.png)
