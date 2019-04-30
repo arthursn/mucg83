@@ -27,17 +27,17 @@ Python interface of MUCG83 for calculating TTT and CCT diagrams
 
 optional arguments:
   -h, --help            show this help message and exit
-  -C C, --C C           Carbon wt.%
-  -Si SI, --Si SI       Silicon wt.%
-  -Mn MN, --Mn MN       Manganese wt.%
-  -Ni NI, --Ni NI       Nickel wt.%
-  -Mo MO, --Mo MO       Molybdenum wt.%
-  -Cr CR, --Cr CR       Chromium wt.%
-  -V V, --V V           Vanadium wt.%
-  -Co CO, --Co CO       Cobalt wt.%
-  -Cu CU, --Cu CU       Copper wt.%
-  -Al AL, --Al AL       Aluminium wt.%
-  -W W, --W W           Tungsten wt.%
+  -C C, --C C           Carbon wt.% (0.001-2.0)
+  -Si SI, --Si SI       Silicon wt.% (0.0-2.5)
+  -Mn MN, --Mn MN       Manganese wt.% (0.0-3.5)
+  -Ni NI, --Ni NI       Nickel wt.% (0.0-3.5)
+  -Mo MO, --Mo MO       Molybdenum wt.% (0.0-1.5)
+  -Cr CR, --Cr CR       Chromium wt.% (0.0-3.5)
+  -V V, --V V           Vanadium wt.% (0.0-1.5)
+  -Co CO, --Co CO       Cobalt wt.% (0.0-4.0)
+  -Cu CU, --Cu CU       Copper wt.% (0.0-4.0)
+  -Al AL, --Al AL       Aluminium wt.% (0.0-2.0)
+  -W W, --W W           Tungsten wt.% (0.0-4.0)
   -Tini TINI, --Tini TINI
                         Initial continuous cooling temperature
   -plot PLOT, --plot PLOT
