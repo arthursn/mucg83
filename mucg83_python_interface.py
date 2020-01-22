@@ -16,6 +16,9 @@ def run_mucg83(cmd, **composition):
                  stdout=PIPE,
                  stderr=PIPE)
 
+    comp = dict(C=0, Si=0, Mn=0, Ni=0, Mo=0, Cr=0, V=0, Co=0, Cu=0, Al=0, W=0)
+    comp.update(composition)
+    
     options = ('1\n'
                '{C}\n'     # Carbon wt.% ?
                '{Si}\n'    # Silicon wt.% ?
@@ -28,7 +31,7 @@ def run_mucg83(cmd, **composition):
                '{Cu}\n'    # Copper wt.% ?
                '{Al}\n'    # Aluminium wt.% ?
                '{W}\n'     # Tungsten wt.% ?
-               '0').format(**composition)
+               '0').format(**comp)
 
     # Passes compositions to mucg83 and reads output
     # Important information is stored in stdout
