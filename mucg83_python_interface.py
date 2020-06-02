@@ -174,7 +174,6 @@ if __name__ == '__main__':
     parser.add_argument('-Al', '--Al', type=float, default=0., help='Aluminium wt.%% (0.0-2.0)')
     parser.add_argument('-W', '--W', type=float, default=0., help='Tungsten wt.%% (0.0-4.0)')
     parser.add_argument('-Tini', '--Tini', type=float, default=900., help='Initial continuous cooling temperature')
-    parser.add_argument('-plot', '--plot', default='TTT', help='What to plot: CCT | TTT | both')
     parser.add_argument('-cmd', '--cmd', default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
                         help='Path to mucg83 executable')
 
@@ -182,7 +181,6 @@ if __name__ == '__main__':
 
     args = vars(args)
     cmd = args.pop('cmd')
-    plot = args.pop('plot').lower()
     Tini = args.pop('Tini')
 
     composition = args
@@ -193,51 +191,55 @@ if __name__ == '__main__':
 
     df_no_nan = df.dropna()
 
-    fig, ax = plt.subplots()
-
-    lsty_diff = 'k-'
-    lsty_shear = 'r-'
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
     # Plot TTT
-    if plot == 'ttt' or plot == 'both':
-        ax.plot(df['DIFFT'], df['CTEMP'], lsty_diff, label='Ferrite + Pearlite (TTT)')
-        ax.plot(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], lsty_shear, label='Bainite (TTT)')
-        lsty_diff = 'k--'
-        lsty_shear = 'r--'
+    ax1.plot(df['DIFFT'], df['CTEMP'], label='Ferrite + Pearlite (TTT)')
+    ax1.plot(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], label='Bainite (TTT)')
 
     # Plot CCT
-    if plot == 'cct' or plot == 'both':
-        cooling_rates = 10**np.linspace(-2, 4, 240)
+    T_min = Ms if Ms is not None else 25
 
-        t, T = convert_TTT_to_CCT(df['DIFFT'], df['CTEMP'], Tini, cooling_rates)
-        ax.plot(t[T > Ms], T[T > Ms], lsty_diff, label='Ferrite + Pearlite (CCT)')
-        t, T = convert_TTT_to_CCT(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], Tini, cooling_rates)
-        ax.plot(t[T > Ms], T[T > Ms], lsty_shear, label='Bainite (CCT)')
+    t_min = min(df['DIFFT'].min(), df['SHEART'].min())
+    phi_min_log = np.log10(Tini/t_min)
+    cooling_rates = 10**np.linspace(phi_min_log - 6, phi_min_log, 240)
 
-        for cooling_rate in cooling_rates[::10]:
-            T = np.linspace(Tini, 25, 100)
-            t = (Tini - T)/cooling_rate
-            ax.plot(t, T, 'k:', lw=1)
+    t, T = convert_TTT_to_CCT(df['DIFFT'], df['CTEMP'], Tini, cooling_rates)
+    ax2.plot(t[T > T_min], T[T > T_min], label='Ferrite + Pearlite (CCT)')
+    t, T = convert_TTT_to_CCT(df_no_nan['SHEART'], df_no_nan['SHEAR_CTEMP'], Tini, cooling_rates)
+    ax2.plot(t[T > T_min], T[T > T_min], label='Bainite (CCT)')
 
-    ax.set_xscale('log')
-    ax.set_xlim(1e-2, 1e6)
-    ax.set_ylim(100, Tini)
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel(u'Temperature (°C)')
+    for cooling_rate in cooling_rates[::10]:
+        T = np.linspace(Tini, 25, 100)
+        t = (Tini - T)/cooling_rate
+        ax2.plot(t, T, 'k:', lw=1)
+
+    ax1.set_xscale('log')
+    # ax1.set_xlim(1e-2, 1e6)
+    ax1.set_ylim(100, Tini)
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel(u'Temperature (°C)')
+
+    ax2.set_xscale('log')
+    # ax2.set_xlim(1e-2, 1e6)
+    ax2.set_ylim(100, Tini)
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel(u'Temperature (°C)')
 
     title = ['{}{}'.format(v, k) for k, v in composition.items() if v > 0]
     title.insert(0, 'Fe')
-    ax.set_title('-'.join(title))
+    fig.suptitle('-'.join(title))
 
     if Bs_n:
         print('Bainite start temperature:', Bs_n, 'oC')
-        ax.axhline(Bs_n, color='r', ls=':')
-        ax.text(ax.get_xlim()[0]*1.5, Bs_n + 10, 'Bainite start', color='r')
+        ax1.axhline(Bs_n, color='r', ls=':')
+        ax1.text(ax1.get_xlim()[0]*1.5, Bs_n + 10, 'Bainite start', color='r')
     if Ms:
         print('Martensite start temperature:', Ms, 'oC')
-        ax.axhline(Ms, color='b', ls=':')
-        ax.text(ax.get_xlim()[0]*1.5, Ms + 10, 'Martensite start', color='b')
+        ax1.axhline(Ms, color='b', ls=':')
+        ax1.text(ax1.get_xlim()[0]*1.5, Ms + 10, 'Martensite start', color='b')
 
-    ax.legend()
+    ax1.legend()
+    ax2.legend()
 
     plt.show()
