@@ -39,36 +39,36 @@ optional arguments:
   -W W, --W W           Tungsten wt.% (0.0-4.0)
   -Tini TINI, --Tini TINI
                         Initial continuous cooling temperature
-  -plot PLOT, --plot PLOT
-                        What to plot: CCT | TTT | both
   -cmd CMD, --cmd CMD   Path to mucg83 executable
 
 ```
 
-# Examples
+# Example
 
-Plot TTT diagram:
 
 ```bash
 python mucg83_python_interface.py -C 0.1 -Mn 1
 ```
 
-This will prompt a matplotlib window with the following TTT diagram:
-
-![Fe-0.1%C-1%Mn TTT](img/Fe-01C-1Mn_TTT.png)
-
-Plot CCT diagram with cooling starting from 900 °C:
-
-```bash
-python mucg83_python_interface.py -C 0.1 -Mn 1 -Tini 900 -plot CCT
+```python
+# If running in ipython or spyder
+%run mucg83_python_interface.py -C 0.1 -Mn 1
 ```
 
-![Fe-0.1%C-1%Mn TTT](img/Fe-01C-1Mn_CCT.png)
+This will prompt a matplotlib window with the following TTT and CCT diagram:
 
-Plot TTT and CCT diagrams:
+![Fe-0.1%C-1%Mn TTT](img/Fe-01C-1Mn.png)
+
+The initial austenitizing temperature is, by default, 900 °C. Use the option `-Tini` to set the desired temperature:
+
 
 ```bash
-python mucg83_python_interface.py -C 0.1 -Mn 1 -Tini 900 -plot both
+python mucg83_python_interface.py -C 0.1 -Mn 1 -Tini 1000
 ```
 
-![Fe-0.1%C-1%Mn TTT](img/Fe-01C-1Mn_both.png)
+```python
+# If running in ipython or spyder
+%run mucg83_python_interface.py -C 0.1 -Mn 1 -Tini 1000
+```
+
+![Fe-0.1%C-1%Mn TTT](img/Fe-01C-1Mn_1000oC.png)
