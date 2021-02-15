@@ -18,7 +18,7 @@ def run_mucg83(cmd, **composition):
 
     comp = dict(C=0, Si=0, Mn=0, Ni=0, Mo=0, Cr=0, V=0, Co=0, Cu=0, Al=0, W=0)
     comp.update(composition)
-    
+
     options = ('1\n'
                '{C}\n'     # Carbon wt.% ?
                '{Si}\n'    # Silicon wt.% ?
@@ -39,7 +39,7 @@ def run_mucg83(cmd, **composition):
 
     try:
         proc.kill()
-    except:
+    except Exception:
         pass
 
     return stdout, stderr
@@ -119,7 +119,7 @@ def get_transformation_temperature_CCT(TTT_curve_inv, Tini, cooling_rate, dT=1.0
             increment = 0.
             try:
                 increment = dt/TTT_curve_inv(curr_T)
-            except:
+            except Exception:
                 pass
 
             nucleation_time += increment
@@ -128,7 +128,8 @@ def get_transformation_temperature_CCT(TTT_curve_inv, Tini, cooling_rate, dT=1.0
             it += 1
 
             if it > maxit:
-                print('Maximum number of iterations ({:}) reached for phi = {:e} K/s'.format(maxit, cooling_rate))
+                print(('Maximum number of iterations ({:}) '
+                       'reached for phi = {:e} K/s').format(maxit, cooling_rate))
                 curr_T = None
                 break
     else:
@@ -161,7 +162,8 @@ def convert_TTT_to_CCT(t, T, Tini, cooling_rates, dT=1.0):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Python interface of MUCG83 for calculating TTT and CCT diagrams')
+    parser = argparse.ArgumentParser(
+        description='Python interface of MUCG83 for calculating TTT and CCT diagrams')
     parser.add_argument('-C', '--C', type=float, default=0., help='Carbon wt.%% (0.001-2.0)')
     parser.add_argument('-Si', '--Si', type=float, default=0., help='Silicon wt.%% (0.0-2.5)')
     parser.add_argument('-Mn', '--Mn', type=float, default=0., help='Manganese wt.%% (0.0-3.5)')
@@ -173,21 +175,37 @@ if __name__ == '__main__':
     parser.add_argument('-Cu', '--Cu', type=float, default=0., help='Copper wt.%% (0.0-4.0)')
     parser.add_argument('-Al', '--Al', type=float, default=0., help='Aluminium wt.%% (0.0-2.0)')
     parser.add_argument('-W', '--W', type=float, default=0., help='Tungsten wt.%% (0.0-4.0)')
-    parser.add_argument('-Tini', '--Tini', type=float, default=900., help='Initial continuous cooling temperature')
-    parser.add_argument('-cmd', '--cmd', default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
+    parser.add_argument('-Tini', '--Tini', type=float, default=900.,
+                        help='Initial continuous cooling temperature')
+    parser.add_argument('-cmd', '--cmd',
+                        default='bin/mucg83.exe' if platform.system() == 'Windows' else 'bin/mucg83',
                         help='Path to mucg83 executable')
+    parser.add_argument('-e', '--exp', action='store_true', help='Export to .xlsx format')
 
     args = parser.parse_args()
 
     args = vars(args)
     cmd = args.pop('cmd')
     Tini = args.pop('Tini')
+    export = args.pop('exp')
 
     composition = args
 
     stdout, stderr = run_mucg83(cmd, **composition)
     # Parse stdout into pandas DataFrame df and critical temperatures Ws, Bs_g, Bs_n, and Ms
     df, Ws, Bs_g, Bs_n, Ms = parse_stdout(stdout.decode())
+
+    title = ['{}{}'.format(v, k) for k, v in composition.items() if v > 0]
+    title.insert(0, 'Fe')
+    title = '-'.join(title)
+
+    if export:
+        try:
+            fout = '{}.xlsx'.format(title)
+            print('Exporting data to {}'.format(fout))
+            df.to_excel(fout)
+        except Exception as ex:
+            print(ex)
 
     df_no_nan = df.dropna()
 
@@ -226,9 +244,7 @@ if __name__ == '__main__':
     ax2.set_xlabel('Time (s)')
     ax2.set_ylabel(u'Temperature (°C)')
 
-    title = ['{}{}'.format(v, k) for k, v in composition.items() if v > 0]
-    title.insert(0, 'Fe')
-    fig.suptitle('-'.join(title))
+    fig.suptitle(title)
 
     if Bs_n:
         print('Bainite start temperature:', Bs_n, 'oC')
